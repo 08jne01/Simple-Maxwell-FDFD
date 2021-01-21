@@ -22,7 +22,6 @@ function write_data(data)
 end
 
 
-
 config = {
 	n_points = 75,
 	size_of_structure = 40.2e-2 ,--um
@@ -52,40 +51,24 @@ for i = 1, (points - 1), 1 do
 	print("Wavelength: "..config.wavelength)
 	local current_solve = solver.solve(config)
 
-
 	best_overlap, previous_mode = solver.closestOverlap(previous_mode, previous_solve, current_solve)
 	local neff = solver.getEffectiveIndex(previous_mode, current_solve)
 
 	print("Best Mode "..previous_mode.." neff: "..neff.." overlap: "..best_overlap)
-
-	
 
 	data[i] = {
 		wavelength = config.wavelength,
 		neff = neff,
 	}
 	
-
 	if best_overlap < 0.7 then
 		break
 	end
-
 
 	previous_solve = current_solve
 	
 end
 
 write_data(data)
-
-
---if (solver.loadGeometry("Fibres/NonSquare.bmp")) then
-	--solve1 = solver.solve(config1)
---end
-
-
-
---if (solver.loadGeometry("Fibres/LNSiO2Waveguide.bmp")) then
-	--solve2 = solver.solve(config1)
---end
 
 

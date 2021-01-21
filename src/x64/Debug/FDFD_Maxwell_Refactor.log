@@ -1,8 +1,0 @@
-﻿  LuaHooks.cpp
-C:\Users\joshn\source\repos\FDFD_Maxwell_Refactor\FDFD_Maxwell_Refactor\FieldTools.h(4,17): warning C4099: 'MainConfig': type name first seen using 'struct' now seen using 'class'
-C:\Users\joshn\source\repos\FDFD_Maxwell_Refactor\FDFD_Maxwell_Refactor\Config.h(4): message : see declaration of 'MainConfig'
-C:\Users\joshn\source\repos\FDFD_Maxwell_Refactor\FDFD_Maxwell_Refactor\LuaHooks.cpp(656,18): warning C4244: 'initializing': conversion from 'lua_Number' to 'int', possible loss of data
-C:\Users\joshn\source\repos\FDFD_Maxwell_Refactor\FDFD_Maxwell_Refactor\LuaHooks.cpp(657,12): warning C4244: 'initializing': conversion from 'lua_Number' to 'int', possible loss of data
-C:\Users\joshn\source\repos\FDFD_Maxwell_Refactor\FDFD_Maxwell_Refactor\LuaHooks.cpp(682,18): warning C4244: 'initializing': conversion from 'lua_Number' to 'int', possible loss of data
-C:\Users\joshn\source\repos\FDFD_Maxwell_Refactor\FDFD_Maxwell_Refactor\LuaHooks.cpp(692,48): warning C4244: 'argument': conversion from 'Eigen::Index' to 'int', possible loss of data
-  FDFD_Maxwell_Refactor.vcxproj -> C:\Users\joshn\source\repos\FDFD_Maxwell_Refactor\x64\Debug\FDFD_Maxwell_Refactor.exe

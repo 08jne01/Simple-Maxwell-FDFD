@@ -1,13 +1,14 @@
-#include "FieldTools.h"
 #include "Field.h"
 #include "Config.h"
+#include <fstream>
+#include "FieldTools.h"
 
 static inline int index(const int i, const int j, const MainConfig& config)
 {
 	return i + j * config.m_width;
 }
 
-double overlap(const Field& field1, const int mode1, const Field& field2, const int mode2, const MainConfig& config)
+double overlap( const Field& field1, const int mode1, const Field& field2, const int mode2, const MainConfig& config )
 {
 	double xSum12 = 0.0;
 	double xSum21 = 0.0;
@@ -46,4 +47,36 @@ double overlap(const Field& field1, const int mode1, const Field& field2, const 
 		sum22 += xSum22;
 	}
 	return std::abs(sum12 * sum21) / std::abs(sum22 * sum11);
+}
+
+bool outputFields( const Field& field, const int mode, const int width, const int height, const char* filename )
+{
+	//Output fields to a file
+	std::ofstream file;
+	file.open( filename );
+
+	if ( ! file.is_open() )
+		return false;
+
+	file << "x,y,Ex,Ey,Ez,Hx,Hy,Hz" << std::endl;
+
+	double dx = field.dx;
+	double dy = field.dy;
+
+	for ( int i = 0; i < height; i++ )
+	{
+		for ( int j = 0; j < width; j++ )
+		{
+			file << i * dx << "," << j * dy << ","
+				<< field.Ex.col( mode )[j + width * i] << ","
+				<< field.Ey.col( mode )[j + width * i] << ","
+				<< field.Ez.col( mode )[j + width * i] << ","
+				<< field.Hx.col( mode )[j + width * i] << ","
+				<< field.Hy.col( mode )[j + width * i] << ","
+				<< field.Hz.col( mode )[j + width * i] << std::endl;
+		}
+	}
+	file.close();
+
+	return true;
 }

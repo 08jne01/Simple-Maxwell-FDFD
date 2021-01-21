@@ -11,6 +11,8 @@ extern "C"
 #include "FileHandler.h"
 #include "FieldViewer.h"
 #include "Program.h"
+#include "FieldHandler.h"
+#include "FieldTools.h"
 
 //TODO:
 // - fix the mess below
@@ -37,19 +39,45 @@ static void closeLua(lua_State* L);
 static int luaLoadGeometry(lua_State* L);
 static int luaSolve(lua_State* L);
 static int luaSweep(lua_State* L);
+static int luaDisplay( lua_State* L );
+static int luaClosestOverlap( lua_State* L );
+static int luaOutputField( lua_State* L );
+static int luaEffectiveIndex( lua_State* L );
+static int luaGetAllEffectiveIndex( lua_State* L );
+
+//helper
+static void pushTable( lua_State* L, char* key, char* value );
+static void pushTable( lua_State* L, int key, int value );
+static void pushTable( lua_State* L, int key, double value );
+
+static int getLineNumber( lua_State* L );
+
+static bool loadSolverConfigFromTable( lua_State* L, SolverConfig& config );
 
 //get global lua vars
 static int getInt(lua_State* L, const char* var);
 static double getDouble(lua_State* L, const char* var);
 static std::string getString(lua_State* L, const char* var);
 static bool getBool(lua_State* L, const char* var);
+
+static bool getTableValue( lua_State* L, const char* var, bool optional = false );
+static int getTableInt( lua_State* L, const char* var, bool& success, bool optional = false );
+static double getTableDouble( lua_State* L, const char* var, bool& success, bool optional = false );
+static std::string getTableString( lua_State* L, const char* var, bool& success, bool optional = false );
+static bool getTableBool( lua_State* L, const char* var, bool& success, bool optional = false );
+
 static void addModule(lua_State* L, const luaL_Reg* funcs, const char* name);
-static bool luaCallFunction(lua_State* L, char* functionName, int numParams, int numReturns);
+static bool luaCallFunction(lua_State* L, const char* functionName, int numParams, int numReturns);
 static double callWavelength(double wavelength, const char* name);
 
 static const luaL_Reg solverFunctions[] = {
 	{"loadGeometry", luaLoadGeometry},
 	{"solve", luaSolve},
+	{"display", luaDisplay},
+	{"closestOverlap", luaClosestOverlap},
+	{"outputField", luaOutputField},
+	{"getEffectiveIndex", luaEffectiveIndex},
+	{"getAllEffectiveIndex", luaGetAllEffectiveIndex},
 	{NULL, NULL}
 };
 
@@ -156,9 +184,57 @@ double callWavelength(double wavelength, const char* name)
 	return 1.0;
 }
 
+int getLineNumber( lua_State* L )
+{
+	lua_Debug ar;
+	lua_getstack( L, 1, &ar );
+	lua_getinfo( L, "l", &ar );
+	return ar.currentline;
+}
+
 void closeSweepConfig()
 {
 	closeLua(LFunctions);
+}
+
+void pushTable( lua_State* L, int key, double value )
+{
+	lua_pushnumber( L, key );
+	lua_pushnumber( L, value );
+	lua_settable( L, -3 );
+}
+
+bool loadSolverConfigFromTable( lua_State* L, SolverConfig& config )
+{
+	bool success = true;
+
+	bool result;
+	config.m_points = getTableInt( L, "n_points", result );
+	success &= result;
+	config.m_size = getTableDouble( L, "size_of_structure", result );
+	success &= result;
+	config.m_maxIndexRed = getTableDouble( L, "max_index_red", result );
+	success &= result;
+	config.m_maxIndexGreen = getTableDouble( L, "max_index_green", result );
+	success &= result;
+	config.m_maxIndexBlue = getTableDouble( L, "max_index_blue", result );
+	success &= result;
+	config.m_neffGuess = getTableDouble( L, "max_neff_guess", result, true );
+	if ( ! result )
+	{
+		config.m_neffGuess = -1.0;
+	}
+	
+	config.m_wavelength = getTableDouble( L, "wavelength", result );
+	success &= result;
+	config.m_fileName = getTableString( L, "geometry_filename", result );
+	success &= result;
+	config.m_timers = getTableBool( L, "timers", result );
+	success &= result;
+	config.m_modes = getTableInt( L, "num_modes", result );
+	success &= result;
+
+	return success;
 }
 
 int getInt(lua_State* L, const char* var)
@@ -239,7 +315,105 @@ bool getBool(lua_State* L, const char* var)
 	}
 }
 
-bool luaCallFunction(lua_State* L, char* functionName, int numParams, int numReturns)
+bool getTableValue( lua_State* L, const char* var, bool optional )
+{
+	if ( lua_istable( L, -1 ) )
+	{
+		lua_pushstring( L, var );
+		lua_gettable( L, -2 );
+		return true;
+	}
+	else
+	{
+		if ( ! optional )
+			printf( "(%d) Error table not supplied.\n", getLineNumber(L) );
+		return false;
+	}
+}
+
+int getTableInt( lua_State* L, const char* var, bool& success, bool optional )
+{
+	return (int)getTableDouble( L, var, success );
+}
+
+double getTableDouble( lua_State* L, const char* var, bool& success, bool optional )
+{
+	if ( getTableValue( L, var, optional ) )
+	{
+		if ( lua_isnumber( L, -1 ) )
+		{
+			double number = lua_tonumber( L, -1 );
+			lua_pop( L, 1 );
+			success = true;
+			return number;
+		}
+		else
+		{
+			if ( ! optional )
+				printf( "(%d) Error value is not a number.\n", getLineNumber(L) );
+
+			lua_pop( L, 1 );
+			success = false;
+			return 0.0;
+		}
+	}
+	return 0.0;
+}
+
+std::string getTableString( lua_State* L, const char* var, bool& success, bool optional )
+{
+	if ( getTableValue( L, var, optional ) )
+	{
+		if ( lua_isstring( L, -1 ) )
+		{
+			
+			std::string value = lua_tostring( L, -1 );
+			lua_pop( L, 1 );
+			success = true;
+			return value;
+		}
+		else
+		{
+			if ( ! optional )
+				printf( "(%d) Error value is not a string.\n", getLineNumber(L) );
+
+			lua_pop( L, 1 );
+			success = false;
+			return "";
+		}
+	}
+
+	success = false;
+	return "";
+}
+
+bool getTableBool( lua_State* L, const char* var, bool& success, bool optional )
+{
+	if ( getTableValue( L, var, optional ) )
+	{
+		if ( lua_isboolean( L, -1 ) )
+		{
+			bool value = lua_toboolean( L, -1 );
+			success = true;
+			lua_pop( L, 1 );
+			return value;
+		}
+		else
+		{
+			if ( ! optional )
+				printf( "(%d) Error value is not a number.\n", getLineNumber(L) );
+
+			lua_pop( L, 1 );
+			success = false;
+			return false;
+		}
+	}
+
+	success = false;
+	return false;
+}
+
+bool luaCallFunction(lua_State* L, const char* functionName, int numParams, int numReturns)
 {
 	if (lua_getglobal(L, functionName))
 	{
@@ -276,7 +450,6 @@ bool luaOkay(lua_State* L, const int status)
 	if (status != LUA_OK)
 	{
 		std::cout << lua_tostring(L, -1) << std::endl;
-		luaFailed = true;
 		return false;
 	}
 	return true;
@@ -292,14 +465,240 @@ int luaLoadGeometry(lua_State* L)
 
 int luaSolve(lua_State* L)
 {
-	const char* str = lua_tostring(L, -1);
 	SolverConfig config;
-	loadSolverConfig(str, config);
-	FieldSolver solver(Program::instance()->getMainConfig(), config, FileHandler::instance()->getGeometry());
+	if ( lua_istable( L, -1 ) )
+	{
+		if ( ! loadSolverConfigFromTable( L, config ) )
+		{
+			lua_pushnil( L );
+			return 1;
+		}
+	}
+	else if ( lua_isstring(L, -1) )
+	{
+		const char* str = lua_tostring( L, -1 );
+		LuaSolverConfig luaConfig(str, config);
+		if ( ! luaConfig.loadConfig() )
+		{
+			printf( "(%d) Error loading solver config.\n", getLineNumber(L) );
+			lua_pushnil( L );
+			return 1;
+		}
+	}
+	else
+	{
+		printf( "(%d) Error unknown argument.\n", getLineNumber(L) );
+		//lua_error( L );
+		lua_pushnil( L );
+		return 1;
+	}
+
+	if ( FileHandler::instance()->getGeometryName() != config.m_fileName )
+	{
+		FileHandler::instance()->loadGeometry( config.m_fileName );
+	}
+
+	FieldSolver solver( Program::instance()->getMainConfig(), config, FileHandler::instance()->getGeometry() );
 	Field field;
-	solver.solve(field);
-	FieldViewer viewer(Program::instance()->getMainConfig(), config, field, solver.getPermativityVector());
-	lua_pushnumber(L, viewer.mainLoop());
+	if ( solver.solve( field ) )
+	{
+		int index = FieldHandler::instance()->addField( field, Program::instance()->getMainConfig(), config, solver.getPermativityVector() );
+		lua_pushnumber( L, index );
+		return 1;
+	}
+	else
+	{
+		lua_pushnil( L );
+		return 1;
+	}
+
+
+	printf( "(%d) Error incorrect params for solve.\n", getLineNumber( L ) );
+	lua_pushnil( L );
+	return 1;
+}
+
+int luaDisplay( lua_State* L )
+{
+	if ( lua_isnumber( L, -1 ) )
+	{
+		int index = (int)lua_tonumber( L, -1 );
+		const Solve* solve = FieldHandler::instance()->getSolveAtIndex(index);
+
+		if ( solve )
+		{
+			FieldViewer viewer( solve->mainConfig, solve->solverConfig, solve->field, solve->permativityVector );
+			viewer.mainLoop();
+			lua_pushnumber( L, (lua_Number)viewer.getCurrentMode() );
+			return 1;
+		}
+		else
+		{
+			printf( "(%d) Invalid Solve Index.\n", getLineNumber(L) );
+			lua_pushnil( L );
+			return 1;
+		}
+	}
+	else
+	{
+		printf( "(%d) Error no solve index supplied.\n", getLineNumber( L ) );
+		lua_pushnil( L );
+		return 1;
+	}
+}
+
+int luaOutputField( lua_State* L )
+{
+	if ( lua_isnumber( L, -3 ) && lua_isnumber(L, -2) && lua_isstring(L, -1) )
+	{
+		int solveIndex = (int)lua_tonumber( L, -3 );
+		int mode = (int)lua_tonumber( L, -2 );
+		const char* filename = lua_tostring( L, -1 );
+
+		const Solve* solve = FieldHandler::instance()->getSolveAtIndex( solveIndex );
+
+		if ( ! solve )
+		{
+			printf( "(%d) Error unable to find solve.\n", getLineNumber( L ) );
+			lua_pushboolean( L, false );
+			return 1;
+		}
+		
+		bool success = outputFields( solve->field, mode, solve->solverConfig.m_width, solve->solverConfig.m_height, filename );
+		lua_pushboolean( L, success );
+		return 1;
+	}
+
+	printf( "(%d) Error unknown parameters expected (number, string)\n", getLineNumber( L ) );
+	lua_pushboolean( L, false );
+	return 1;
+}
+
+int luaClosestOverlap( lua_State* L )
+{
+	if ( lua_isnumber(L, -3) && lua_isnumber( L, -2 ) && lua_isnumber( L, -1 ) )
+	{
+		int mode1 = (int)lua_tonumber( L, -3 );
+		int fieldIndex1 = (int)lua_tonumber( L, -2 );
+		int fieldIndex2 = (int)lua_tonumber( L, -1 );
+		
+
+		const Solve* solve1 = FieldHandler::instance()->getSolveAtIndex( fieldIndex1 );
+		const Solve* solve2 = FieldHandler::instance()->getSolveAtIndex( fieldIndex2 );
+
+		if ( solve1 && solve2 )
+		{
+			if ( solve1->mainConfig.m_width == solve2->mainConfig.m_width &&
+				solve1->mainConfig.m_height == solve2->mainConfig.m_height)
+			{
+				if ( mode1 >= 0 && mode1 < solve1->field.Ex.outerSize() )
+				{
+					double bestOverlap = 0.0;
+					int closestMode = -1;
+					for ( int i = 0; i < solve2->field.Ex.outerSize(); i++ )
+					{
+						double curOverlap = overlap( solve1->field, mode1, solve2->field, i, solve2->mainConfig );
+
+						if ( curOverlap > bestOverlap )
+						{
+							bestOverlap = curOverlap;
+							closestMode = i;
+						}
+					}
+
+					lua_pushnumber( L, (lua_Number)bestOverlap );
+					lua_pushnumber( L, (lua_Number)closestMode );
+					return 2;
+				}
+				else
+				{
+					printf( "(%d) Error mode not in Solve 1.\n", getLineNumber( L ) );
+					lua_pushnil( L );
+					lua_pushnil( L );
+					return 2;
+				}
+			}
+			else
+			{
+				printf( "(%d) Error fields are not the same dimensions.\n", getLineNumber( L ) );
+				lua_pushnil( L );
+				lua_pushnil( L );
+				return 2;
+			}
+		}
+		else
+		{
+			if ( !solve1 )
+				printf( "(%d) Error Solve1 could not be found.\n", getLineNumber( L ) );
+
+			if ( !solve2 )
+				printf( "(%d) Error Solve2 could not be found.\n", getLineNumber( L ) );
+
+			lua_pushnil( L );
+			lua_pushnil( L );
+			return 2;
+		}
+	}
+	else
+	{
+		printf( "(%d) Error please supply two field indices.\n", getLineNumber( L ) );
+		lua_pushnil( L );
+		lua_pushnil( L );
+		return 2;
+	}
+}
+
+int luaEffectiveIndex( lua_State* L )
+{
+	if ( lua_isnumber( L, -1 ) && lua_isnumber( L, -2 ) )
+	{
+		int solveIndex = lua_tonumber( L, -1 );
+		int mode = lua_tonumber( L, -2 );
+		const Solve* solve = FieldHandler::instance()->getSolveAtIndex( solveIndex );
+
+		if ( solve )
+		{
+			lua_pushnumber( L, solve->field.neff( mode ) );
+			return 1;
+		}
+		else
+		{
+			printf( "(%d) Error Solve could not be found.\n", getLineNumber( L ) );
+			lua_pushnil( L );
+			return 1;
+		}
+	}
+	
+	printf( "(%d) Error unknown parameters expected (number, number).\n", getLineNumber( L ) );
+	lua_pushnil( L );
+	return 1;
+}
+
+int luaGetAllEffectiveIndex( lua_State* L )
+{
+	if ( lua_isnumber( L, -1 ) )
+	{
+		int solveIndex = lua_tonumber( L, -1 );
+		const Solve* solve = FieldHandler::instance()->getSolveAtIndex( solveIndex );
+
+		if ( ! solve )
+		{
+			printf( "(%d) Error Solve could not be found.\n", getLineNumber( L ) );
+			lua_pushnil( L );
+			return 1;
+		}
+
+		lua_createtable( L, solve->field.Ex.outerSize(), 0 );
+		for ( int i = 0; i < solve->field.Ex.outerSize(); i++ )
+		{
+			pushTable( L, i, solve->field.neff( i ) );
+		}
+
+		return 1;
+	}
+
+	printf( "(%d) Error unknown parameters expected (number).\n", getLineNumber( L ) );
+	lua_pushnil( L );
 	return 1;
 }
 
@@ -309,10 +708,21 @@ int luaSweep(lua_State* L)
 	return 0;
 }
 
+LuaVM::LuaVM( const std::string& filename, bool func)
+{
+	L() = luaL_newstate();
+	luaL_openlibs( L() );
+	if ( func )
+		addModule( L(), solverFunctions, "solver" );
+
+	m_luaFailed = !luaOkay( L(), luaL_dofile( L(), filename.c_str() ) );
+}
+
 LuaVM::LuaVM(const std::string& filename)
 {
 	L() = luaL_newstate();
 	luaL_openlibs(L());
+	addModule( L(), solverFunctions, "solver" );
 	m_luaFailed = !luaOkay(L(), luaL_dofile(L(), filename.c_str()));
 }
 
@@ -331,9 +741,9 @@ bool LuaMainConfig::loadConfig()
 {
 	if (!failed())
 	{
-		m_config.m_timers = getBool("timers");
 		m_config.m_screenWidth = getInt("screen_width");
 		m_config.m_colorMapPath = getString("color_map_path");
+		m_config.m_scriptPath = getString( "script_path" );
 		m_config.m_solverPath = getString("solver_path");
 		m_config.m_sweepPath = getString("sweep_path");
 		m_config.m_outputDataPath = getString("output_data_folder");
@@ -417,15 +827,13 @@ double LuaSweepConfig::evaluateIndex(double wavelength, Color color)
 			}
 			else
 			{
-				std::cout << "Index function must return a float!" << std::endl;
+				std::cout << "(" << getLineNumber( L() ) << ") Index function must return a float!" << std::endl;
 			}
 		}	
 	}
 	failed(true);
 	return 1.0;
 }
-
-
 
 double LuaVM::getDouble(const char* var)
 {
@@ -436,7 +844,7 @@ double LuaVM::getDouble(const char* var)
 	}
 	else
 	{
-		std::cout << "Value " << var << " is not an float." << std::endl;
+		std::cout << "(" << getLineNumber( L() ) << ") Value " << var << " is not an float." << std::endl;
 		failed(true);
 		return 1.0;
 	}
@@ -451,7 +859,7 @@ bool LuaVM::getBool(const char* var)
 	}
 	else
 	{
-		std::cout << "Value " << var << " is not an boolean." << std::endl;
+		std::cout << "(" << getLineNumber( L() ) << ") Value " << var << " is not an boolean." << std::endl;
 		failed(true);
 		return false;
 	}
@@ -466,7 +874,7 @@ int LuaVM::getInt(const char* var)
 	}
 	else
 	{
-		std::cout << "Value " << var << " is not an int." << std::endl;
+		std::cout << "(" << getLineNumber( L() ) << ") Value " << var << " is not an int." << std::endl;
 		failed(true);
 		return 1;
 	}
@@ -481,8 +889,26 @@ std::string LuaVM::getString(const char* var)
 	}
 	else
 	{
-		std::cout << "Value " << var << " is not a string." << std::endl;
+		std::cout << "(" << getLineNumber( L() ) << ") Value " << var << " is not a string." << std::endl;
 		failed(true);
 		return "";
 	}
+}
+
+LuaScript::LuaScript( const std::string& filename ):
+	LuaVM(filename, true)
+{
+	
+}
+
+bool LuaScript::executeScript()
+{
+	luaCallFunction( L(), "main", 0, 1 );
+	
+	if ( lua_isboolean( L(), -1 ) )
+	{
+		return lua_toboolean( L(), -1 );
+	}
+	
+	return false;
 }

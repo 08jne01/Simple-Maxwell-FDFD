@@ -144,8 +144,18 @@ inline void FieldSolver::clearCoeffs()
 
 inline bool FieldSolver::solveForEigenVectors()
 {
-	double maxPerm = std::max(std::max(m_config.m_maxIndexRed, m_config.m_maxIndexGreen), m_config.m_maxIndexBlue);
-	return solveForEigenVectors(m_k * m_k * maxPerm * maxPerm);
+	double sigma;
+	if ( m_config.m_neffGuess > 0.0 )
+	{
+		sigma = m_k * m_k * m_config.m_neffGuess * m_config.m_neffGuess;
+	}
+	else
+	{
+		double maxPerm = std::max( std::max( m_config.m_maxIndexRed, m_config.m_maxIndexGreen ), m_config.m_maxIndexBlue );
+		sigma = (m_k * m_k * maxPerm * maxPerm);
+	}
+
+	return solveForEigenVectors(sigma);
 }
 
 inline const std::vector<double>& FieldSolver::getPermativityVector() const

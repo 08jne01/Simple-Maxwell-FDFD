@@ -4,6 +4,7 @@
 #include <sstream>
 #include "FileHandler.h"
 #include <fstream>
+#include "FieldTools.h"
 FieldViewer::FieldViewer
 (
 	const MainConfig& config,
@@ -156,7 +157,7 @@ void FieldViewer::setMode(int mode)
 		os << "Overlap: " << m_overlaps[mode] << std::endl;
 	}
 
-	os << std::setprecision(10) << "neff: " << sqrt(std::abs((double)m_field.eigenValues[mode])) / (double)m_field.k << std::endl
+	os << std::setprecision(10) << "neff: " << m_field.neff( mode ) << std::endl
 		<< "Current Mode: " << (mode) << std::endl;
 
 	windowText = os.str();
@@ -268,27 +269,7 @@ void FieldViewer::writeFields()
 	os << s << m_mode << end;
 	file.open(os.str());
 
-	int size = m_config.m_width;
-
-	file << "x,y,Ex,Ey,Ez,Hx,Hy,Hz" << std::endl;
-
-	double dx = m_field.dx;
-	double dy = m_field.dy;
-
-	for (int i = 0; i < m_config.m_height; i++)
-	{
-		for (int j = 0; j < size; j++)
-		{
-			file << i * dx << "," << j * dy << ","
-				<< m_field.Ex.col(m_mode)[j + size * i] << ","
-				<< m_field.Ey.col(m_mode)[j + size * i] << ","
-				<< m_field.Ez.col(m_mode)[j + size * i] << ","
-				<< m_field.Hx.col(m_mode)[j + size * i] << ","
-				<< m_field.Hy.col(m_mode)[j + size * i] << ","
-				<< m_field.Hz.col(m_mode)[j + size * i] << std::endl;
-		}
-	}
-	file.close();
+	outputFields( m_field, m_mode, m_config.m_width, m_config.m_height, os.str().c_str() );
 }
 
 void FieldViewer::keyCallBack(sf::Event events)

@@ -51,6 +51,9 @@
     <ClCompile Include="FieldTools.cpp">
       <Filter>Source Files\FieldTools</Filter>
     </ClCompile>
+    <ClCompile Include="FieldHandler.cpp">
+      <Filter>Source Files\FieldTools</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Program.h">
@@ -87,6 +90,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="FieldTools.h">
+      <Filter>Header Files\FieldTools</Filter>
+    </ClInclude>
+    <ClInclude Include="FieldHandler.h">
+      <Filter>Header Files\FieldTools</Filter>
+    </ClInclude>
+    <ClInclude Include="Solve.h">
       <Filter>Header Files\FieldTools</Filter>
     </ClInclude>
   </ItemGroup>

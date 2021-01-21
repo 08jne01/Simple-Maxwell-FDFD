@@ -36,7 +36,10 @@ public:
 
 	}
 
-
+	inline double neff( int mode ) const
+	{
+		return sqrt( std::abs( (double)eigenValues[mode] ) ) / (double)k;
+	}
 
 	void makeTEandTM()
 
@@ -77,6 +80,9 @@ public:
 			return TE;
 		}
 	}
+
+	
+
 private:
 };
 

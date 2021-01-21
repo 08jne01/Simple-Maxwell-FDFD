@@ -18,6 +18,7 @@ class LuaVM
 {
 public:
 	LuaVM(const std::string& filename);
+	LuaVM(const std::string& filename, bool func);
 	~LuaVM();
 	lua_State*& L();
 	bool failed();

@@ -14,7 +14,7 @@ int main(int argc, char** argv)
 
 	bool sweep = false;
 	bool lua = false;
-	char* script = argv[0];
+	char* script = NULL;
 	for (int i = 0; i < argc; i++)
 	{
 		if (isParam(argv[i], "--sweep", "-s"))
@@ -23,16 +23,10 @@ int main(int argc, char** argv)
 		}
 		else if (isParam(argv[i], "--lua", "-l"))
 		{
+			lua = true;
 			if (i + 1 < argc)
 			{
 				script = argv[i + 1];
-				lua = true;
-			}
-			else
-			{
-				std::cout << "Please input script location." << std::endl;
-				lua = false;
-				return EXIT_FAILURE;
 			}
 		}
 		else if (isParam(argv[i], "--single", "-z"))
@@ -62,12 +56,13 @@ int main(int argc, char** argv)
 	{
 		return EXIT_FAILURE;
 	}
-	
+
 	Program::ProgramType type;
 	if (lua)
 	{
 		type = Program::ProgramType::SCRIPT;
-		config.m_scriptPath = script;
+		if ( script )
+			config.m_scriptPath = script;
 	}
 	else if (sweep)
 	{

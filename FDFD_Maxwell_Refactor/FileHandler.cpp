@@ -21,6 +21,7 @@ FileHandler::FileHandler(MainConfig& config):
 bool FileHandler::loadGeometry(const std::string& path)
 {
 	m_geometry.clear();
+	m_currentGeometry = path;
 	sf::Image geometry;
 	bool success = geometry.loadFromFile(path);
 	m_config.m_width = geometry.getSize().x;

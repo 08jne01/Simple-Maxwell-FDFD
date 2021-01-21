@@ -192,10 +192,8 @@ void FieldSolver::contractionThread(const SparseMatrix& matrix, std::vector<Trip
 bool FieldSolver::solveForEigenVectors(double sigma)
 {
 	Clock c;
-	if (m_config.m_timers)
-	{
-		std::cout << "Solving for eigen vectors/values..." << std::endl;
-	}
+	
+	std::cout << "Solving for eigen vectors/values in " << m_config.m_fileName << std::endl;
 
 	Spectra::SparseGenRealShiftSolve<double> op(m_p);
 	Spectra::GenEigsRealShiftSolver<double, Spectra::LARGEST_MAGN, Spectra::SparseGenRealShiftSolve<double>> eigs(&op, m_config.m_modes, m_config.m_modes * 2 + 1, sigma);

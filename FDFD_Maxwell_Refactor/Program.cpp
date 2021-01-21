@@ -2,6 +2,7 @@
 #include "FileHandler.h"
 #include "FieldSolver.h"
 #include "FieldViewer.h"
+#include "FieldHandler.h"
 #include <iostream>
 
 Program* Program::global_program = nullptr;
@@ -23,7 +24,9 @@ Program::Program
 		std::cout << "Warning multiple instances of program!" << std::endl;
 	}
 
+	//Singlets
 	FileHandler fileHandler(m_config);
+	FieldHandler fieldHandler;
 
 	switch (type)
 	{
@@ -46,7 +49,9 @@ void Program::doScript()
 		return;
 	}
 	//else do script
-	runScript(m_config.m_scriptPath);
+	LuaScript script( m_config.m_scriptPath );
+	
+	script.executeScript();
 }
 
 void Program::doSingle()

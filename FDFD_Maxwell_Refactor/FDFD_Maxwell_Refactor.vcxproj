@@ -149,6 +149,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="FieldHandler.cpp" />
     <ClCompile Include="FieldSolver.cpp" />
     <ClCompile Include="FieldTools.cpp" />
     <ClCompile Include="FieldViewer.cpp" />
@@ -163,6 +164,7 @@
     <ClInclude Include="Color.h" />
     <ClInclude Include="Config.h" />
     <ClInclude Include="Field.h" />
+    <ClInclude Include="FieldHandler.h" />
     <ClInclude Include="FieldSolver.h" />
     <ClInclude Include="FieldTools.h" />
     <ClInclude Include="FieldViewer.h" />
@@ -170,6 +172,7 @@
     <ClInclude Include="luaextern.h" />
     <ClInclude Include="ProfileSweeper.h" />
     <ClInclude Include="Program.h" />
+    <ClInclude Include="Solve.h" />
     <ClInclude Include="Vector.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

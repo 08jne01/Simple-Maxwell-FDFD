@@ -21,7 +21,7 @@ public:
 	void getColorScheme();
 	double interpolate(double d1, double d2, double w) const;
 	double getValue(const std::vector<double>& gridPoints, const int sideLengthX, const int sideLengthY, const int x, const int y, const int w, const int h) const;
-
+	inline int getCurrentMode();
 
 
 private:
@@ -44,6 +44,11 @@ private:
 	std::string windowText;
 	const MainConfig m_config;
 };
+
+inline int FieldViewer::getCurrentMode()
+{
+	return m_mode;
+}
 
 inline double FieldViewer::interpolate
 (

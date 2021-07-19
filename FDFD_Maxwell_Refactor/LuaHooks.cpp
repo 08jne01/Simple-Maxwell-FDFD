@@ -44,6 +44,7 @@ static int luaClosestOverlap( lua_State* L );
 static int luaOutputField( lua_State* L );
 static int luaEffectiveIndex( lua_State* L );
 static int luaGetAllEffectiveIndex( lua_State* L );
+static int luaClearSolves( lua_State* L );
 
 //helper
 static void pushTable( lua_State* L, char* key, char* value );
@@ -71,13 +72,14 @@ static bool luaCallFunction(lua_State* L, const char* functionName, int numParam
 static double callWavelength(double wavelength, const char* name);
 
 static const luaL_Reg solverFunctions[] = {
-	{"loadGeometry", luaLoadGeometry},
-	{"solve", luaSolve},
-	{"display", luaDisplay},
-	{"closestOverlap", luaClosestOverlap},
-	{"outputField", luaOutputField},
-	{"getEffectiveIndex", luaEffectiveIndex},
-	{"getAllEffectiveIndex", luaGetAllEffectiveIndex},
+	{"loadGeometry", luaLoadGeometry},					// ( string filename ), returns bool success
+	{"solve", luaSolve},								// ( table config ) or ( string confg_filename ), returns solve_index or nil
+	{"display", luaDisplay},							// ( number solve_index ), returns success, selected_mode
+	{"closestOverlap", luaClosestOverlap},				// ( number mode1, number solve_index1, number solve_index2 ), returns overlap, mode2
+	{"outputField", luaOutputField},					// ( number mode, number solve_index, string filename ), returns success
+	{"getEffectiveIndex", luaEffectiveIndex},			// ( number mode, number solve_index ), returns neff for given mode
+	{"getAllEffectiveIndex", luaGetAllEffectiveIndex},  // ( solve_index1 ), returns table of effective indices
+	{"clearSolves", luaClearSolves},					// returns number of solves cleared
 	{NULL, NULL}
 };
 
@@ -425,6 +427,8 @@ bool luaCallFunction(lua_State* L, const char* functionName, int numParams, int 
 			}
 		}
 	}
+
+	printf( "Function \"%s\" could not be found.\n", functionName );
 	return false;
 }
 
@@ -528,22 +532,25 @@ int luaDisplay( lua_State* L )
 		if ( solve )
 		{
 			FieldViewer viewer( solve->mainConfig, solve->solverConfig, solve->field, solve->permativityVector );
-			viewer.mainLoop();
+			bool quit = viewer.mainLoop();
+			lua_pushboolean( L, quit );
 			lua_pushnumber( L, (lua_Number)viewer.getCurrentMode() );
-			return 1;
+			return 2;
 		}
 		else
 		{
 			printf( "(%d) Invalid Solve Index.\n", getLineNumber(L) );
 			lua_pushnil( L );
-			return 1;
+			lua_pushnil( L );
+			return 2;
 		}
 	}
 	else
 	{
 		printf( "(%d) Error no solve index supplied.\n", getLineNumber( L ) );
 		lua_pushnil( L );
-		return 1;
+		lua_pushnil( L );
+		return 2;
 	}
 }
 
@@ -551,8 +558,8 @@ int luaOutputField( lua_State* L )
 {
 	if ( lua_isnumber( L, -3 ) && lua_isnumber(L, -2) && lua_isstring(L, -1) )
 	{
-		int solveIndex = (int)lua_tonumber( L, -3 );
-		int mode = (int)lua_tonumber( L, -2 );
+		int solveIndex = (int)lua_tonumber( L, -2 );
+		int mode = (int)lua_tonumber( L, -3 );
 		const char* filename = lua_tostring( L, -1 );
 
 		const Solve* solve = FieldHandler::instance()->getSolveAtIndex( solveIndex );
@@ -699,6 +706,13 @@ int luaGetAllEffectiveIndex( lua_State* L )
 
 	printf( "(%d) Error unknown parameters expected (number).\n", getLineNumber( L ) );
 	lua_pushnil( L );
+	return 1;
+}
+
+int luaClearSolves( lua_State* L )
+{
+	int solves = FieldHandler::instance()->clearFields();
+	lua_pushboolean( L, solves );
 	return 1;
 }
 

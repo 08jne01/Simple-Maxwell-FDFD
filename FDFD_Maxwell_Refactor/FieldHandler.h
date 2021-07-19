@@ -9,7 +9,7 @@ class FieldHandler
 public:
 	FieldHandler();
 	~FieldHandler();
-	void clearFields();
+	int clearFields();
 	const Solve* getSolveAtIndex( int index ) const;
 	int addField( const Field& field, const MainConfig& mainConfig, const SolverConfig& solverConfig, const std::vector<double>& permativityVector );
 

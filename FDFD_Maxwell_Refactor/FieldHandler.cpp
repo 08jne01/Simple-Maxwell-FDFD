@@ -22,9 +22,11 @@ FieldHandler::~FieldHandler()
 	m_fields.clear();
 }
 
-void FieldHandler::clearFields()
+int FieldHandler::clearFields()
 {
+	int size = m_fields.size();
 	m_fields.clear();
+	return size;
 }
 
 const Solve* FieldHandler::getSolveAtIndex( int index ) const

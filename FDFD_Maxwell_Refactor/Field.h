@@ -36,6 +36,11 @@ public:
 
 	}
 
+	inline bool inBounds( int mode ) const
+	{
+		return mode >= 0 && mode < eigenValues.size();
+	}
+
 	inline double neff( int mode ) const
 	{
 		return sqrt( std::abs( (double)eigenValues[mode] ) ) / (double)k;

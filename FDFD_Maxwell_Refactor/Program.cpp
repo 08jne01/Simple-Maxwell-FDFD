@@ -4,6 +4,7 @@
 #include "FieldViewer.h"
 #include "FieldHandler.h"
 #include <iostream>
+#include "PythonHooks.h"
 
 Program* Program::global_program = nullptr;
 
@@ -23,6 +24,8 @@ Program::Program
 	{
 		std::cout << "Warning multiple instances of program!" << std::endl;
 	}
+
+	type = SCRIPT;
 
 	//Singlets
 	FileHandler fileHandler(m_config);
@@ -48,10 +51,14 @@ void Program::doScript()
 	{
 		return;
 	}
-	//else do script
-	LuaScript script( m_config.m_scriptPath );
-	
-	script.executeScript();
+
+
+	runPythonScript( m_config.m_scriptPath.c_str() );
+
+	////else do script
+	//LuaScript script( m_config.m_scriptPath );
+	//
+	//script.executeScript();
 }
 
 void Program::doSingle()

@@ -74,12 +74,15 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
+    <PublicIncludeDirectories>
+    </PublicIncludeDirectories>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <PostBuildEventUseInBuild>false</PostBuildEventUseInBuild>
+    <PublicIncludeDirectories>$(PublicIncludeDirectories)</PublicIncludeDirectories>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -102,13 +105,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);SFML_STATIC;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\joshn\source\Non CMAKE Libs\SFML\SFML Include;C:\Users\joshn\source\Non CMAKE Libs\Scientific;$(SolutionDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\joshn\source\Non CMAKE Libs\SFML\SFML Include;C:\Users\joshn\source\Non CMAKE Libs\Scientific;$(SolutionDir)\include;C:\Python39\include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>sfml-graphics-s-d.lib;sfml-window-s-d.lib;sfml-system-s-d.lib;opengl32.lib;freetype.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\joshn\source\Non CMAKE Libs\SFML\SFML Library;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>sfml-graphics-s-d.lib;sfml-window-s-d.lib;sfml-system-s-d.lib;opengl32.lib;freetype.lib;winmm.lib;python39.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\joshn\source\Non CMAKE Libs\SFML\SFML Library;C:\Python39\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -136,9 +139,9 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>SFML_STATIC;_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <PreprocessorDefinitions>SFML_STATIC;_CRT_SECURE_NO_WARNINGS;</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Users\joshn\source\Non CMAKE Libs\SFML\SFML Include;C:\Users\joshn\source\Non CMAKE Libs\Scientific;$(SolutionDir)\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Users\joshn\source\Non CMAKE Libs\SFML\SFML Include;C:\Users\joshn\source\Non CMAKE Libs\Scientific;$(SolutionDir)\include;C:\Python39\include</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -146,8 +149,8 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>sfml-graphics-s.lib;sfml-window-s.lib;sfml-system-s.lib;opengl32.lib;freetype.lib;winmm.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <AdditionalLibraryDirectories>C:\Users\joshn\source\Non CMAKE Libs\SFML\SFML Library;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>sfml-graphics-s.lib;sfml-window-s.lib;sfml-system-s.lib;opengl32.lib;freetype.lib;winmm.lib;python39.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>C:\Users\joshn\source\Non CMAKE Libs\SFML\SFML Library;C:\Python39\libs;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
     </Link>
     <PostBuildEvent>
       <Command>signtool sign /n "Open Source Developer, Joshua Nelson" /fd SHA256 /t http://timestamp.comodoca.com/authenticode  $(SolutionDir)$(Platform)\$(Configuration)\$(ProjectName).exe</Command>
@@ -163,6 +166,7 @@
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="ProfileSweeper.cpp" />
     <ClCompile Include="Program.cpp" />
+    <ClCompile Include="PythonHooks.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Clock.h" />
@@ -177,6 +181,7 @@
     <ClInclude Include="luaextern.h" />
     <ClInclude Include="ProfileSweeper.h" />
     <ClInclude Include="Program.h" />
+    <ClInclude Include="PythonHooks.h" />
     <ClInclude Include="Solve.h" />
     <ClInclude Include="Vector.h" />
   </ItemGroup>

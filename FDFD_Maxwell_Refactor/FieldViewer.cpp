@@ -29,7 +29,8 @@ FieldViewer::FieldViewer
 ) :
 	m_field(field),
 	m_config(config),
-	m_overlaps(overlaps)
+	m_overlaps(overlaps),
+	m_overlapOn(true)
 {
 	init();
 	makeGeometryPoints(geometry, solverConfig);
